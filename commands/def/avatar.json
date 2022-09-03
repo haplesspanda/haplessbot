@@ -1,0 +1,18 @@
+{
+    "name": "avatar",
+    "type": 1,
+    "description": "Display user's avatar",
+    "options": [
+        {
+            "name": "user",
+            "type": 6,
+            "description": "User to display avatar for (optional)"
+        },
+        {
+            "name": "show_server_profile",
+            "type": 5,
+            "description": "Whether to show user's server profile avatar if it exists. Optional, defaults to true."
+        }
+    ]
+}
+  

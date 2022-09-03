@@ -1,0 +1,60 @@
+{
+    "name": "choose",
+    "type": 1,
+    "description": "Randomly choose from a list of things",
+    "options": [
+        {
+            "name": "entry1",
+            "type": 3,
+            "description": "First entry",
+            "required": true
+        },
+        {
+            "name": "entry2",
+            "type": 3,
+            "description": "Second entry",
+            "required": true
+        },
+        {
+            "name": "entry3",
+            "type": 3,
+            "description": "Third entry (optional)"
+        },
+        {
+            "name": "entry4",
+            "type": 3,
+            "description": "Fourth entry (optional)"
+        },
+        {
+            "name": "entry5",
+            "type": 3,
+            "description": "Fifth entry (optional)"
+        },
+        {
+            "name": "entry6",
+            "type": 3,
+            "description": "Sixth entry (optional)"
+        },
+        {
+            "name": "entry7",
+            "type": 3,
+            "description": "Seventh entry (optional)"
+        },
+        {
+            "name": "entry8",
+            "type": 3,
+            "description": "Eighth entry (optional)"
+        },
+        {
+            "name": "entry9",
+            "type": 3,
+            "description": "Ninth entry (optional)"
+        },
+        {
+            "name": "entry10",
+            "type": 3,
+            "description": "Tenth entry (optional)"
+        }
+    ]
+}
+  

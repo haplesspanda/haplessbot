@@ -1,0 +1,50 @@
+Lord (Eirika)	Great Lord (Eirika)	+4	+2	+2	+1	+3	+5	+2	+2	Sword +70
+Lord (Ephraim)	Great Lord (Ephraim)	+4	+2	+3	+2	+2	+5	+2	+2	Lance +40
+Recruit	Cavalier (F)	+1	+0	+2	+2	+0	+2	+3	+3	Sword E, Lance +30
+Recruit	Knight (F)	+2	+1	+1	+1	+2	+0	+4	+0	Lance +30
+Cavalier (M)	Paladin (M)	+2	+1	+1	+1	+2	+1	+2	+1	Sword +30
+Cavalier (F)	Paladin (F)	+1	+1	+1	+2	+1	+2	+0	+1	Sword +30
+Cavalier (M)	Great Knight (M)	+3	+2	+1	+2	+2	+1	+4	-1	Axe D
+Cavalier (F)	Great Knight (F)	+3	+1	+1	+2	+2	+2	+1	-1	Axe D
+Knight (M)	General (M)	+4	+2	+2	+3	+2	+3	+2	+1	Sword E, Lance +40, Axe E
+Knight (F)	General (F)	+3	+2	+3	+2	+3	+3	+1	+1	Sword E, Lance +40, Axe E
+Knight (M)	Great Knight (M)	+3	+2	+1	+2	+2	+1	+0	+2	Sword E, Axe D
+Knight (F)	Great Knight (F)	+3	+1	+1	+2	+2	+2	+0	+2	Sword E, Axe D
+Thief	Assassin	+3	+1	+0	+0	+2	+2	+2	+0	Sword +30
+Thief	Rogue	+2	+1	+1	+0	+2	+2	+1	+0	–
+Mercenary	Hero	+4	+1	+2	+2	+2	+2	+2	+1	Sword +40, Axe D
+Mercenary	Ranger (M)	+3	+2	+1	+1	+3	+3	+0	+2	Bow D
+Myrmidon (M)	Swordmaster (M)	+5	+2	+0	+0	+2	+1	+1	+1	Sword +40
+Myrmidon (F)	Swordmaster (F)	+4	+2	+1	+0	+2	+1	+2	+1	Sword +40
+Myrmidon (M)	Assassin (M)	+3	+1	+0	+0	+2	+2	+0	+1	–
+Myrmidon (F)	Assassin (F)	+2	+1	+1	+1	+2	+1	+1	+1	–
+Archer (M)	Sniper (M)	+3	+1	+2	+2	+2	+3	+1	+1	Bow +40
+Archer (F)	Sniper (F)	+4	+3	+1	+1	+2	+2	+1	+1	Bow +40
+Archer (M)	Ranger (M)	+3	+2	+1	+1	+3	+3	+2	+2	Sword D
+Archer (F)	Ranger (F)	+2	+2	+2	+1	+3	+3	+3	+2	Sword D
+Wyvern Rider	Wyvern Lord	+4	+2	+2	+0	+2	+0	+1	+1	Sword D, Lance +40
+Wyvern Rider	Wyvern Knight (M)	+3	+1	+2	+3	+0	+1	+0	+1	Lance +40
+Pupil	Mage (M)	+1	+0	+1	+2	+1	+2	+1	+1	Anima +30
+Pupil	Shaman (M)	+1	+2	+0	+1	+1	+2	+2	+1	Anima = 0, Dark D
+Mage (M)	Sage (M)	+4	+1	+0	+0	+3	+3	+1	+1	Staff D, Anima +40, Light D
+Mage (F)	Sage (F)	+3	+1	+1	+0	+3	+3	+1	+1	Staff D, Anima +40, Light D
+Mage (M)	Mage Knight (M)	+4	+2	+0	+0	+2	+2	+2	+2	Staff D, Anima +40
+Mage (F)	Mage Knight (F)	+3	+2	+1	+0	+2	+2	+3	+2	Staff D, Anima +40
+Shaman	Druid	+4	+0	+0	+3	+2	+2	+1	+1	Staff E, Anima D Dark +40
+Shaman	Summoner	+3	+0	+1	+3	+1	+3	+1	+1	Staff E, Dark +40
+Priest	Bishop (M)	+3	+2	+1	+0	+3	+2	+2	+1	Staff +40, Light D
+Priest	Sage (M)	+4	+1	+0	+0	+3	+3	+2	+1	Anima C, Light D
+Monk	Bishop (M)	+3	+2	+1	+0	+3	+2	+1	+1	Staff C, Light +30
+Monk	Sage (M)	+4	+1	+0	+0	+3	+3	+1	+1	Staff D, Anima C,  Light +30
+Cleric	Bishop (F)	+3	+1	+2	+1	+2	+2	+1	+1	Staff + 40, Light D
+Cleric	Valkyrie	+3	+2	+1	+0	+2	+3	+2	+2	Light D
+Journeyman	Fighter	+2	+2	+1	+0	+0	+1	+3	+1	Axe +30
+Journeyman	Pirate	+2	+2	+0	+1	+1	+0	+2	+1	Axe +30
+Fighter	Warrior	+3	+1	+2	+0	+3	+3	+2	+1	Axe +40, Bow E
+Fighter	Hero	+4	+1	+2	+2	+2	+2	+0	+1	Sword C
+Pirate	Berserker	+4	+1	+1	+1	+2	+2	+3	+1	Axe +40
+Pirate	Warrior	+3	+1	+2	+0	+3	+3	+3	+1	Axe +40, Bow E
+Pegasus Knight	Falcoknight	+5	+2	+0	+2	+2	+2	+1	+1	Sword E, Lance +40
+Pegasus Knight	Wyvern Knight (F)	+3	+2	+1	+2	+1	+1	+4	+1	Lance +40
+Troubadour	Valkyrie	+3	+2	+1	+0	+2	+3	+1	+1	Light D
+Troubadour	Mage Knight (F)	+3	+2	+1	+0	+2	+2	+1	+1	Anima C

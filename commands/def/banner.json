@@ -1,0 +1,13 @@
+{
+    "name": "banner",
+    "type": 1,
+    "description": "Display user's banner",
+    "options": [
+        {
+            "name": "user",
+            "type": 6,
+            "description": "User to display banner for (optional)"
+        }
+    ]
+}
+  

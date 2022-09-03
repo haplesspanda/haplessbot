@@ -1,0 +1,71 @@
+{
+    "name": "fe8",
+    "type": 1,
+    "description": "Get info from FE8",
+    "options": [
+        {
+            "name": "character",
+            "type": 2,
+            "description": "Get info about a FE8 character",
+            "options": [
+                {
+                    "name": "info",
+                    "type": 1,
+                    "description": "Get basic information about a FE8 character",
+                    "options": [
+                        {
+                            "name": "character",
+                            "type": 3,
+                            "description": "The character to show info for",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "name": "averagestats",
+                    "type": 1,
+                    "description": "Get average stats about a FE8 character at a certain level",
+                    "options": [
+                        {
+                            "name": "character",
+                            "type": 3,
+                            "description": "The character to show info for",
+                            "required": true
+                        },
+                        {
+                            "name": "level",
+                            "type": 4,
+                            "description": "The level at which to show average stats",
+                            "required": true
+                        },
+                        {
+                            "name": "promotion",
+                            "type": 3,
+                            "description": "The class to promote the unit to (optional)"
+                        },
+                        {
+                            "name": "promotionlevel",
+                            "type": 4,
+                            "description": "If the unit has been promoted, their level in the promoted class (optional)"
+                        },
+                        {
+                            "name": "secondpromotion",
+                            "type": 3,
+                            "description": "The second class to promote the unit to, for trainee units (optional)"
+                        },
+                        {
+                            "name": "secondpromotionlevel",
+                            "type": 4,
+                            "description": "If the unit has been promoted a second time, their level in the second promotion class (optional)"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "chapter",
+            "type": 2,
+            "description": "Get info about a FE8 chapter"
+        }
+    ]
+}

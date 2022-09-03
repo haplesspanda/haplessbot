@@ -1,0 +1,34 @@
+Eirika	Lord	Prologue	Automatically from the start
+Seth	Paladin	Prologue	Automatically from the start
+Franz	Cavalier	1	Automatically from Turn 2
+Gilliam	Knight	1	Automatically from Turn 2
+Vanessa	Pegasus Knight	1	Automatically at the end of the chapter
+Moulder	Priest	1	Automatically at the end of the chapter
+Ross	Journeyman	2	NPC, talk with Eirika or keep him and Garcia alive
+Garcia	Fighter	2	NPC, talk with Ross or keep him and Ross alive
+Neimi	Archer	3	Automatically from the start.
+Colm	Thief	3	NPC, talk with Neimi or keep him and Neimi alive
+Artur	Monk	4	Automatically from the start
+Lute	Mage	4	Visit village to the south west or finish the chapter
+Natasha	Cleric	5	Automatically from the start
+Joshua	Myrmidon	5	Enemy, talk with Natasha
+Ephraim	Lord	5x / 8	5x: Automatically from the start / 8: Automatically from Turn 2
+Forde	Cavalier	5x / 8	5x: Automatically from the start / 8: Automatically from Turn 2
+Kyle	Cavalier	5x / 8	5x: Automatically from the start / 8: Automatically from Turn 2
+Orson	Paladin	5x	Automatically from the start
+Tana	Pegasus Knight	9	Automatically from the start
+Amelia	Recruit	9 / 13	Enemy, talk with Franz or Eirika. (In Chapter 9 she will leave before the beginning of Turn 12, but will return in Chapter 13.)
+Innes	Sniper	10	NPC, talk with Tana or Eirika, or keep alive
+Gerik	Mercenary	10	NPC, talk with Innes or Tethys, or keep alive (if Tethys dies in this chapter, Gerik will leave)
+Tethys	Dancer	10	NPC, talk with Gerik or Innes, or keep alive (if Gerik dies in this chapter, Tethys will leave)
+Marisa	Myrmidon	10	Enemy, talk with Gerik
+L'Arachel	Troubadour	11	NPC, talk with Eirika or keep alive
+Dozla	Berserker	11	NPC, talk with L’Arachel or keep alive
+Saleh	Sage	12	Automatically from the start
+Ewan	Pupil	12	Visit the village to the north west or finish the chapter
+Cormag	Wyvern Rider	13	Appears as an enemy during Turn 5, talk with Eirika.
+Rennac	Rogue	14	Enemy (appears in a treasure room), talk with L’Arachel, or Eirika (you have to pay 9,980G this way though)
+Duessel	Great Knight	15	Automatically at the end of Turn 2
+Knoll	Shaman	15	Automatically at the end of Turn 2
+Myrrh	Manakete	16	From character select screen, once chapter begins
+Syrene	Falcoknight	17	NPC, talk with Tana, Vanessa or Innes (alternatively just keep her alive)
