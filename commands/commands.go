@@ -15,9 +15,12 @@ import (
 	"strings"
 	"time"
 
+	fe8savereader "github.com/haplesspanda/fe8savereader/format"
 	"github.com/haplesspanda/haplessbot/constants"
 	"github.com/haplesspanda/haplessbot/fe8"
 )
+
+var maxContentLength = 2000
 
 func check(e error) {
 	if e != nil {
@@ -68,8 +71,9 @@ type Option struct {
 }
 
 type ResolvedEntities struct {
-	Users   map[string]UserData        `json:"users"`
-	Members map[string]GuildMemberData `json:"members"`
+	Users       map[string]UserData        `json:"users"`
+	Members     map[string]GuildMemberData `json:"members"`
+	Attachments map[string]Attachment      `json:"attachments"`
 }
 
 type InteractionData struct {
@@ -111,10 +115,12 @@ type Embed struct {
 }
 
 type Attachment struct {
-	// Id          string `json:"id"`
+	Id          string `json:"id"`
 	Description string `json:"description"`
 	Filename    string `json:"filename"`
 	ContentType string `json:"content_type"`
+	Url         string `json:"url"`
+	Size        int    `json:"size"`
 }
 
 func RunInteractionCallback(data InteractionData, memberData GuildMemberData, guildId string, interactionId string, interactionToken string) {
@@ -129,6 +135,8 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 	url := fmt.Sprintf("https://discord.com/api/v10/interactions/%s/%s/callback", interactionId, interactionToken)
 	log.Println(url)
 
+	followupUrl := fmt.Sprintf("https://discord.com/api/v10/webhooks/%d/%s", constants.ApplicationId, interactionToken)
+
 	type InteractionCallbackData struct {
 		Content     string       `json:"content"`
 		Embeds      []Embed      `json:"embeds"`
@@ -142,6 +150,7 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 	var callbackJson InteractionCallbackMessage
 	var attachment *BinaryAttachment
+	var followupJson *InteractionCallbackData // TODO: Improve type, this is not correct
 	switch data.Name {
 	case "ping":
 		callbackJson = InteractionCallbackMessage{
@@ -444,6 +453,101 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 				log.Printf("Unknown subcommand %s, aborting", arg.Options[0].Name)
 				return
 			}
+		case "savefile":
+			if data.Options == nil || len(data.Options) != 1 {
+				log.Printf("Aborting, wrong parameters: %v", data.Options)
+				return
+			}
+
+			switch arg.Options[0].Name {
+			case "read":
+				subArg := arg.Options[0]
+				if subArg.Options == nil || len(subArg.Options) != 1 {
+					log.Printf("Aborting, wrong parameters: %v", subArg.Options)
+					return
+				}
+
+				fileRef := subArg.Options[0].Value.(string)
+				attachment := data.Resolved.Attachments[fileRef]
+
+				response, err := http.Get(attachment.Url)
+				check(err)
+				defer response.Body.Close()
+
+				data, err := io.ReadAll(response.Body)
+				check(err)
+
+				outputBuffer := new(bytes.Buffer)
+				fe8savereader.Read(bytes.NewReader(data), outputBuffer)
+
+				outputString := outputBuffer.String()
+				if len(outputString) > maxContentLength {
+					followupJson = &InteractionCallbackData{
+						Content: outputString[maxContentLength:],
+					}
+					outputString = outputString[:maxContentLength]
+				}
+				// TODO: Better long message support
+
+				callbackJson = InteractionCallbackMessage{
+					Type: 4,
+					Data: InteractionCallbackData{
+						Content: outputString,
+					},
+				}
+
+				log.Printf("%s", outputBuffer)
+
+			case "compare":
+				subArg := arg.Options[0]
+				if subArg.Options == nil || len(subArg.Options) != 2 {
+					log.Printf("Aborting, wrong parameters: %v", subArg.Options)
+					return
+				}
+
+				oldFileRef := subArg.Options[0].Value.(string)
+				oldAttachment := data.Resolved.Attachments[oldFileRef]
+
+				oldResponse, err := http.Get(oldAttachment.Url)
+				check(err)
+				defer oldResponse.Body.Close()
+				oldData, err := io.ReadAll(oldResponse.Body)
+				check(err)
+
+				newFileRef := subArg.Options[1].Value.(string)
+				newAttachment := data.Resolved.Attachments[newFileRef]
+
+				newResponse, err := http.Get(newAttachment.Url)
+				check(err)
+				defer newResponse.Body.Close()
+				newData, err := io.ReadAll(newResponse.Body)
+				check(err)
+
+				outputBuffer := new(bytes.Buffer)
+				fe8savereader.Diff(bytes.NewReader(oldData), bytes.NewReader(newData), outputBuffer)
+
+				outputString := outputBuffer.String()
+				if len(outputString) > maxContentLength {
+					followupJson = &InteractionCallbackData{
+						Content: outputString[maxContentLength:],
+					}
+					outputString = outputString[:maxContentLength]
+				}
+				// TODO: Better long message support
+
+				callbackJson = InteractionCallbackMessage{
+					Type: 4,
+					Data: InteractionCallbackData{
+						Content: outputString,
+					},
+				}
+
+				log.Printf("%s", outputBuffer)
+			default:
+				log.Printf("Unknown subcommand %s, aborting", arg.Name)
+				return
+			}
+
 		default:
 			log.Printf("Unknown subcommand %s, aborting", arg.Name)
 			return
@@ -485,6 +589,21 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		check(err)
 		log.Printf("Interaction callback response: %s", bodyJson)
 
+	}
+
+	if followupJson != nil {
+		followupBytes, err := json.Marshal(followupJson)
+		check(err)
+
+		request, err := http.NewRequest("POST", followupUrl, bytes.NewBuffer(followupBytes))
+		check(err)
+		body := doJsonRequest(request)
+
+		var bodyJson any
+		json.Unmarshal(body, &bodyJson)
+
+		check(err)
+		log.Printf("Followup response: %s", bodyJson)
 	}
 }
 

@@ -66,6 +66,45 @@
             "name": "chapter",
             "type": 2,
             "description": "Get info about a FE8 chapter"
+        },
+        {
+            "name": "savefile",
+            "type": 2,
+            "description": "Get info about a FE8 savefile",
+            "options": [
+                {
+                    "name": "read",
+                    "type": 1,
+                    "description": "Read savefile and print a summary",
+                    "options": [
+                        {
+                            "name": "file",
+                            "type": 11,
+                            "description": "The savefile to read",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "name": "compare",
+                    "type": 1,
+                    "description": "Read two savefiles and print the differences",
+                    "options": [
+                        {
+                            "name": "oldfile",
+                            "type": 11,
+                            "description": "The old savefile to read",
+                            "required": true
+                        },
+                        {
+                            "name": "newfile",
+                            "type": 11,
+                            "description": "The new savefile to read",
+                            "required": true
+                        }
+                    ]
+                }
+            ]
         }
     ]
 }
