@@ -7,10 +7,7 @@ import (
 	"io"
 	"log"
 	"math/rand"
-	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
-	"net/textproto"
 	"os"
 	"strings"
 	"time"
@@ -18,6 +15,8 @@ import (
 	fe8savereader "github.com/haplesspanda/fe8savereader/format"
 	"github.com/haplesspanda/haplessbot/constants"
 	"github.com/haplesspanda/haplessbot/fe8"
+	"github.com/haplesspanda/haplessbot/rest"
+	"github.com/haplesspanda/haplessbot/types"
 )
 
 var maxContentLength = 2000
@@ -29,10 +28,8 @@ func check(e error) {
 }
 
 var acceptedCommands = map[string]struct{}{"ping": {}, "avatar": {}, "banner": {}, "choose": {}, "order": {}, "fe8": {}}
-var client *http.Client
 
 func init() {
-	client = &http.Client{}
 	rand.Seed(time.Now().UnixNano())
 }
 
@@ -55,7 +52,7 @@ func DefineCommands(commands []string) {
 		request, err := http.NewRequest("POST", url, bytes.NewBuffer(dat))
 		check(err)
 
-		body := doJsonRequest(request)
+		body := rest.DoJsonRequest(request)
 
 		var bodyJson any
 		json.Unmarshal(body, &bodyJson)
@@ -63,67 +60,9 @@ func DefineCommands(commands []string) {
 	}
 }
 
-type Option struct {
-	Name    string   `json:"name"`
-	Type    int      `json:"type"`
-	Value   any      `json:"value"`
-	Options []Option `json:"options"`
-}
+func RunInteractionCallback(details types.InteractionCreateDetails) {
+	var data, memberData, guildId, interactionId, interactionToken = details.Data, details.Member, details.GuildId, details.Id, details.Token
 
-type ResolvedEntities struct {
-	Users       map[string]UserData        `json:"users"`
-	Members     map[string]GuildMemberData `json:"members"`
-	Attachments map[string]Attachment      `json:"attachments"`
-}
-
-type InteractionData struct {
-	Type     int              `json:"type"`
-	Name     string           `json:"name"`
-	Id       string           `json:"id"`
-	Options  []Option         `json:"options"`
-	Resolved ResolvedEntities `json:"resolved"`
-}
-
-type GuildMemberData struct {
-	User   UserData `json:"user"`
-	Avatar *string  `json:"avatar"`
-}
-
-type UserData struct {
-	Username      string  `json:"username"`
-	Discriminator string  `json:"discriminator"`
-	Id            string  `json:"id"`
-	Avatar        *string `json:"avatar"`
-	Banner        *string `json:"banner"`
-}
-
-type EmbedImage struct {
-	Url string `json:"url"`
-}
-
-type EmbedThumbnail struct {
-	Url string `json:"url"`
-}
-
-type Embed struct {
-	Title       string         `json:"title"`
-	Type        string         `json:"type"`
-	Description string         `json:"description"`
-	Url         string         `json:"url"`
-	Image       EmbedImage     `json:"image"`
-	Thumbnail   EmbedThumbnail `json:"thumbnail"`
-}
-
-type Attachment struct {
-	Id          string `json:"id"`
-	Description string `json:"description"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"content_type"`
-	Url         string `json:"url"`
-	Size        int    `json:"size"`
-}
-
-func RunInteractionCallback(data InteractionData, memberData GuildMemberData, guildId string, interactionId string, interactionToken string) {
 	log.Printf("Processing %s", interactionId)
 	if data.Type != 1 {
 		log.Printf("Unexpected command type %d, aborting", data.Type)
@@ -137,32 +76,21 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 	followupUrl := fmt.Sprintf("https://discord.com/api/v10/webhooks/%d/%s", constants.ApplicationId, interactionToken)
 
-	type InteractionCallbackData struct {
-		Content     string       `json:"content"`
-		Embeds      []Embed      `json:"embeds"`
-		Attachments []Attachment `json:"attachments"`
-	}
-
-	type InteractionCallbackMessage struct {
-		Type int                     `json:"type"`
-		Data InteractionCallbackData `json:"data"`
-	}
-
-	var callbackJson InteractionCallbackMessage
-	var attachment *BinaryAttachment
-	var followupJson *InteractionCallbackData // TODO: Improve type, this is not correct
+	var callbackJson types.InteractionCallbackMessage
+	var attachment *rest.BinaryAttachment
+	var followupJson *types.InteractionCallbackData // TODO: Improve type, this is not correct
 	switch data.Name {
 	case "ping":
-		callbackJson = InteractionCallbackMessage{
+		callbackJson = types.InteractionCallbackMessage{
 			Type: 4,
-			Data: InteractionCallbackData{
+			Data: types.InteractionCallbackData{
 				Content: "Pong",
 			},
 		}
 	case "avatar":
 		// Pick the user (maybe specified from command)
-		var avatarUser UserData
-		var avatarGuildMember GuildMemberData
+		var avatarUser types.UserData
+		var avatarGuildMember types.GuildMemberData
 		var userOption *string
 		var preferServer = true
 		if data.Options != nil && len(data.Options) > 0 {
@@ -198,13 +126,13 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 				avatarExtension = "png"
 			}
 			avatarUrl := fmt.Sprintf("https://cdn.discordapp.com/guilds/%s/users/%s/avatars/%s.%s?size=4096", guildId, avatarUser.Id, *avatarGuildMember.Avatar, avatarExtension)
-			callbackJson = InteractionCallbackMessage{
+			callbackJson = types.InteractionCallbackMessage{
 				Type: 4,
-				Data: InteractionCallbackData{
-					Embeds: []Embed{{
+				Data: types.InteractionCallbackData{
+					Embeds: []types.Embed{{
 						Title: fmt.Sprintf("Avatar for %s", fullUser),
 						Url:   avatarUrl,
-						Image: EmbedImage{Url: avatarUrl},
+						Image: types.EmbedImage{Url: avatarUrl},
 					}},
 				},
 			}
@@ -216,20 +144,20 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 				avatarExtension = "png"
 			}
 			avatarUrl := fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.%s?size=4096", avatarUser.Id, *avatarUser.Avatar, avatarExtension)
-			callbackJson = InteractionCallbackMessage{
+			callbackJson = types.InteractionCallbackMessage{
 				Type: 4,
-				Data: InteractionCallbackData{
-					Embeds: []Embed{{
+				Data: types.InteractionCallbackData{
+					Embeds: []types.Embed{{
 						Title: fmt.Sprintf("Avatar for %s", fullUser),
 						Url:   avatarUrl,
-						Image: EmbedImage{Url: avatarUrl},
+						Image: types.EmbedImage{Url: avatarUrl},
 					}},
 				},
 			}
 		} else {
-			callbackJson = InteractionCallbackMessage{
+			callbackJson = types.InteractionCallbackMessage{
 				Type: 4,
-				Data: InteractionCallbackData{
+				Data: types.InteractionCallbackData{
 					Content: fmt.Sprintf("User %s has no avatar!", fullUser),
 				},
 			}
@@ -251,9 +179,9 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		request, err := http.NewRequest("GET", getUserUrl, nil)
 		check(err)
 
-		body := doJsonRequest(request)
+		body := rest.DoJsonRequest(request)
 
-		var bannerUser UserData
+		var bannerUser types.UserData
 
 		log.Println(body)
 		json.Unmarshal(body, &bannerUser)
@@ -262,9 +190,9 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		fullUser := fmt.Sprintf("%s#%s", bannerUser.Username, bannerUser.Discriminator)
 
 		if bannerUser.Banner == nil {
-			callbackJson = InteractionCallbackMessage{
+			callbackJson = types.InteractionCallbackMessage{
 				Type: 4,
-				Data: InteractionCallbackData{
+				Data: types.InteractionCallbackData{
 					Content: fmt.Sprintf("User %s has no banner!", fullUser),
 				},
 			}
@@ -276,13 +204,13 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 				bannerExtension = "png"
 			}
 			bannerUrl := fmt.Sprintf("https://cdn.discordapp.com/banners/%s/%s.%s?size=4096", bannerUser.Id, *bannerUser.Banner, bannerExtension)
-			callbackJson = InteractionCallbackMessage{
+			callbackJson = types.InteractionCallbackMessage{
 				Type: 4,
-				Data: InteractionCallbackData{
-					Embeds: []Embed{{
+				Data: types.InteractionCallbackData{
+					Embeds: []types.Embed{{
 						Title: fmt.Sprintf("Banner for %s", fullUser),
 						Url:   bannerUrl,
-						Image: EmbedImage{Url: bannerUrl},
+						Image: types.EmbedImage{Url: bannerUrl},
 					}},
 				},
 			}
@@ -294,9 +222,9 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		}
 
 		selectedOption := data.Options[rand.Intn(len(data.Options))]
-		callbackJson = InteractionCallbackMessage{
+		callbackJson = types.InteractionCallbackMessage{
 			Type: 4,
-			Data: InteractionCallbackData{
+			Data: types.InteractionCallbackData{
 				Content: fmt.Sprintf("The answer is %s", selectedOption.Value),
 			},
 		}
@@ -326,9 +254,9 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 			resultString += fmt.Sprintf("\n%s", res)
 		}
 
-		callbackJson = InteractionCallbackMessage{
+		callbackJson = types.InteractionCallbackMessage{
 			Type: 4,
-			Data: InteractionCallbackData{
+			Data: types.InteractionCallbackData{
 				Content: fmt.Sprintf("The order is %s", resultString),
 			},
 		}
@@ -359,27 +287,27 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 				if err == nil {
 					thumbnailUrl := fmt.Sprintf("attachment://%s", data.ThumbnailImage.Name)
-					attachment = &BinaryAttachment{
+					attachment = &rest.BinaryAttachment{
 						ContentType: "image/png",
 						Name:        data.ThumbnailImage.Name,
 						Filename:    data.ThumbnailImage.Filename,
 					}
-					callbackJson = InteractionCallbackMessage{
+					callbackJson = types.InteractionCallbackMessage{
 						Type: 4,
-						Data: InteractionCallbackData{
-							Embeds: []Embed{{
+						Data: types.InteractionCallbackData{
+							Embeds: []types.Embed{{
 								Title:       data.Name,
 								Description: data.Content,
-								Thumbnail: EmbedThumbnail{
+								Thumbnail: types.EmbedThumbnail{
 									Url: thumbnailUrl,
 								},
 							}},
 						},
 					}
 				} else {
-					callbackJson = InteractionCallbackMessage{
+					callbackJson = types.InteractionCallbackMessage{
 						Type: 4,
-						Data: InteractionCallbackData{
+						Data: types.InteractionCallbackData{
 							Content: *err,
 						},
 					}
@@ -424,27 +352,27 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 				if err == nil {
 					thumbnailUrl := fmt.Sprintf("attachment://%s", data.ThumbnailImage.Name)
-					attachment = &BinaryAttachment{
+					attachment = &rest.BinaryAttachment{
 						ContentType: "image/png",
 						Name:        data.ThumbnailImage.Name,
 						Filename:    data.ThumbnailImage.Filename,
 					}
-					callbackJson = InteractionCallbackMessage{
+					callbackJson = types.InteractionCallbackMessage{
 						Type: 4,
-						Data: InteractionCallbackData{
-							Embeds: []Embed{{
+						Data: types.InteractionCallbackData{
+							Embeds: []types.Embed{{
 								Title:       data.Name,
 								Description: data.Content,
-								Thumbnail: EmbedThumbnail{
+								Thumbnail: types.EmbedThumbnail{
 									Url: thumbnailUrl,
 								},
 							}},
 						},
 					}
 				} else {
-					callbackJson = InteractionCallbackMessage{
+					callbackJson = types.InteractionCallbackMessage{
 						Type: 4,
-						Data: InteractionCallbackData{
+						Data: types.InteractionCallbackData{
 							Content: *err,
 						},
 					}
@@ -482,16 +410,16 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 				outputString := outputBuffer.String()
 				if len(outputString) > maxContentLength {
-					followupJson = &InteractionCallbackData{
+					followupJson = &types.InteractionCallbackData{
 						Content: outputString[maxContentLength:],
 					}
 					outputString = outputString[:maxContentLength]
 				}
 				// TODO: Better long message support
 
-				callbackJson = InteractionCallbackMessage{
+				callbackJson = types.InteractionCallbackMessage{
 					Type: 4,
-					Data: InteractionCallbackData{
+					Data: types.InteractionCallbackData{
 						Content: outputString,
 					},
 				}
@@ -528,16 +456,16 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 				outputString := outputBuffer.String()
 				if len(outputString) > maxContentLength {
-					followupJson = &InteractionCallbackData{
+					followupJson = &types.InteractionCallbackData{
 						Content: outputString[maxContentLength:],
 					}
 					outputString = outputString[:maxContentLength]
 				}
 				// TODO: Better long message support
 
-				callbackJson = InteractionCallbackMessage{
+				callbackJson = types.InteractionCallbackMessage{
 					Type: 4,
-					Data: InteractionCallbackData{
+					Data: types.InteractionCallbackData{
 						Content: outputString,
 					},
 				}
@@ -564,7 +492,7 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		request, err := http.NewRequest("POST", url, bytes.NewBuffer(callbackBytes))
 		check(err)
 
-		body := doJsonRequest(request)
+		body := rest.DoJsonRequest(request)
 
 		var bodyJson any
 		json.Unmarshal(body, &bodyJson)
@@ -572,7 +500,7 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		check(err)
 		log.Printf("Interaction callback response: %s", bodyJson)
 	} else {
-		body, boundary := multiPartForm(callbackBytes, *attachment)
+		body, boundary := rest.MultiPartForm(callbackBytes, *attachment)
 		request, err := http.NewRequest("POST", url, body)
 		check(err)
 
@@ -580,7 +508,7 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 		// check(err)
 		// log.Printf("Request: %s", dumpedRequest)
 
-		responseBody := doRequest(request, fmt.Sprintf("multipart/form-data; boundary=%s", boundary))
+		responseBody := rest.DoRequest(request, fmt.Sprintf("multipart/form-data; boundary=%s", boundary))
 
 		// TODO: Merge logging with above
 		var bodyJson any
@@ -597,7 +525,7 @@ func RunInteractionCallback(data InteractionData, memberData GuildMemberData, gu
 
 		request, err := http.NewRequest("POST", followupUrl, bytes.NewBuffer(followupBytes))
 		check(err)
-		body := doJsonRequest(request)
+		body := rest.DoJsonRequest(request)
 
 		var bodyJson any
 		json.Unmarshal(body, &bodyJson)
@@ -612,81 +540,4 @@ func removeIndex(input []string, i int) []string {
 	result = append(result, input[:i]...)
 	result = append(result, input[i+1:]...)
 	return result
-}
-
-func doJsonRequest(request *http.Request) []byte {
-	return doRequest(request, "application/json")
-}
-
-func doRequest(request *http.Request, contentType string) []byte {
-	appendHeaders(request, contentType)
-	response, err := client.Do(request)
-	check(err)
-
-	dumpedResponse, err := httputil.DumpResponse(response, true)
-	check(err)
-
-	log.Printf("HTTP response: %s", dumpedResponse)
-	defer response.Body.Close()
-	body, err := io.ReadAll(response.Body)
-	check(err)
-
-	return body
-}
-
-func appendHeaders(request *http.Request, contentType string) {
-	authHeader := fmt.Sprintf("Bot %s", constants.TokenId)
-
-	request.Header.Set("Authorization", authHeader)
-	request.Header.Set("Content-Type", contentType)
-}
-
-type BinaryAttachment struct {
-	ContentType string
-	Name        string
-	Filename    string
-}
-
-func multiPartForm(jsonData []byte, attachment BinaryAttachment) (*bytes.Buffer, string) {
-	var b bytes.Buffer
-	writer := multipart.NewWriter(&b)
-	var jsonWriter io.Writer
-	jsonHeader := make(textproto.MIMEHeader)
-	jsonHeader.Set("Content-Disposition", "form-data; name=\"payload_json\"")
-	jsonHeader.Set("Content-Type", "application/json")
-	jsonWriter, err := writer.CreatePart(jsonHeader)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = jsonWriter.Write(jsonData)
-	if err != nil {
-		panic(err)
-	}
-
-	var binaryWriter io.Writer
-	binaryHeader := make(textproto.MIMEHeader)
-	binaryHeader.Set("Content-Disposition", fmt.Sprintf("form-data; name=\"file0\"; filename=\"%s\"", attachment.Name))
-	binaryHeader.Set("Content-Type", attachment.ContentType)
-	binaryWriter, err = writer.CreatePart(binaryHeader)
-	if err != nil {
-		panic(err)
-	}
-
-	file, err := os.Open(attachment.Filename)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	io.Copy(binaryWriter, file)
-	if err != nil {
-		panic(err)
-	}
-
-	err = writer.Close()
-	if err != nil {
-		panic(err)
-	}
-	return &b, writer.Boundary()
 }

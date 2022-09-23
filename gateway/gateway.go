@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/haplesspanda/haplessbot/commands"
 	"github.com/haplesspanda/haplessbot/constants"
+	"github.com/haplesspanda/haplessbot/types"
 )
 
 var heartbeatTimer *time.Timer
@@ -69,18 +70,11 @@ func Connect(url string, reconnect bool, interrupt chan os.Signal) {
 
 			switch parsedResponse.Op {
 			case 0: // Event dispatch (everything else)
-				type InteractionCreateDetails struct {
-					Token   string                   `json:"token"`
-					Data    commands.InteractionData `json:"data"`
-					Member  commands.GuildMemberData `json:"member"`
-					Id      string                   `json:"id"`
-					GuildId string                   `json:"guild_id"`
-				}
 				type InteractionCreateMessage struct {
-					Opt int                      `json:"op"`
-					D   InteractionCreateDetails `json:"d"`
-					T   string                   `json:"t"`
-					S   int                      `json:"s"`
+					Opt int                            `json:"op"`
+					D   types.InteractionCreateDetails `json:"d"`
+					T   string                         `json:"t"`
+					S   int                            `json:"s"`
 				}
 
 				var parsedMessage InteractionCreateMessage
@@ -106,7 +100,7 @@ func Connect(url string, reconnect bool, interrupt chan os.Signal) {
 					log.Printf("Parsed ready message as %v", readyMessage)
 					sessionId = &readyMessage.D.SessionId
 				} else if parsedMessage.T == "INTERACTION_CREATE" {
-					commands.RunInteractionCallback(parsedMessage.D.Data, parsedMessage.D.Member, parsedMessage.D.GuildId, parsedMessage.D.Id, parsedMessage.D.Token)
+					commands.RunInteractionCallback(parsedMessage.D)
 				}
 				setSequence(&parsedMessage.S)
 			case 1: // Heartbeat
