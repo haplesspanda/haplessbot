@@ -3,6 +3,7 @@ package constants
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 var ApplicationId int
@@ -18,10 +19,10 @@ func check(e error) {
 func init() {
 	token, err := os.ReadFile("secret/token")
 	check(err)
-	TokenId = string(token)
+	TokenId = strings.TrimSpace(string(token))
 
 	application, err := os.ReadFile("secret/application")
 	check(err)
-	ApplicationId, err = strconv.Atoi(string(application))
+	ApplicationId, err = strconv.Atoi(strings.TrimSpace(string(application)))
 	check(err)
 }
