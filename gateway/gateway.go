@@ -32,144 +32,139 @@ func StartConnection() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	Connect(gatewayUrl, false, interrupt)
+	connect(gatewayUrl, interrupt)
 }
 
-func Connect(url string, reconnect bool, interrupt chan os.Signal) {
-	log.Printf("Connecting to %s, reconnect=%t", url, reconnect)
-
-	c, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil {
-		log.Fatalf("Dial error: %s", err)
-	}
-	defer c.Close()
-
-	reconnectChannel := make(chan struct{})
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-		for {
-			_, message, err := c.ReadMessage()
-			if err != nil {
-				log.Printf("Read error: %s", err)
-				return
-			}
-			log.Printf("received raw: %s", message)
-
-			type GenericMessage struct {
-				Op int     `json:"op"`
-				D  any     `json:"d"`
-				S  *int    `json:"s"`
-				T  *string `json:"T"`
-			}
-			var parsedResponse GenericMessage
-			json.Unmarshal(message, &parsedResponse)
-
-			log.Printf("Parsed response as: %v", parsedResponse)
-
-			switch parsedResponse.Op {
-			case 0: // Event dispatch (everything else)
-				type InteractionCreateMessage struct {
-					Opt int                            `json:"op"`
-					D   types.InteractionCreateDetails `json:"d"`
-					T   string                         `json:"t"`
-					S   int                            `json:"s"`
-				}
-
-				var parsedMessage InteractionCreateMessage
-				json.Unmarshal(message, &parsedMessage)
-
-				log.Printf("Parsed event dispatch message as %v", parsedMessage)
-
-				if parsedMessage.T == "READY" {
-					type ReadyMessageDetails struct {
-						SessionId string `json:"session_id"`
-					}
-
-					type ReadyMessage struct {
-						Op int                 `json:"op"`
-						D  ReadyMessageDetails `json:"d"`
-						T  string              `json:"t"`
-						S  string              `json:"s"`
-					}
-
-					var readyMessage ReadyMessage
-					json.Unmarshal(message, &readyMessage)
-
-					log.Printf("Parsed ready message as %v", readyMessage)
-					sessionId = &readyMessage.D.SessionId
-				} else if parsedMessage.T == "INTERACTION_CREATE" {
-					commands.RunInteractionCallback(parsedMessage.D)
-				}
-				setSequence(&parsedMessage.S)
-			case 1: // Heartbeat
-				type HeartbeatMessageRecv struct {
-					Op int `json:"op"`
-					D  any `json:"d"`
-				}
-				var parsedHeartbeatMessage HeartbeatMessageRecv
-				json.Unmarshal(message, &parsedHeartbeatMessage)
-
-				log.Printf("Parsed hello message as %v", parsedHeartbeatMessage)
-				// Immediate response.
-				writeHeartbeat(c)
-			case 7: // Reconnect
-				close(reconnectChannel)
-			case 10: // Hello
-				type HelloMessage struct {
-					Op int `json:"op"`
-					D  struct {
-						HeartbeatInterval int `json:"heartbeat_interval"`
-					} `json:"d"`
-				}
-				var parsedHelloMessage HelloMessage
-				json.Unmarshal(message, &parsedHelloMessage)
-
-				log.Printf("Parsed heartbeat response as: %v", parsedHelloMessage)
-
-				go heartbeatScheduler(c, parsedHelloMessage.D.HeartbeatInterval)
-				if reconnect {
-					resume(c)
-				} else {
-					identify(c)
-				}
-			case 11: // Heartbeat ack
-				type HeartbeatAckMessage struct {
-					Op int `json:"op"`
-				}
-				var parsedHeartbeatAckMessage HeartbeatAckMessage
-				json.Unmarshal(message, &parsedHeartbeatAckMessage)
-
-				log.Printf("Parsed heartbeat ack response as %v", parsedHeartbeatAckMessage)
-				// TODO: Track acks and reconnect if not receiving any
-			}
-
-		}
-	}()
+func connect(url string, interrupt chan os.Signal) {
+	reconnect := false
 
 	for {
+		log.Printf("Connecting to %s, reconnect=%t", url, reconnect)
+		c, _, err := websocket.DefaultDialer.Dial(url, nil)
+		if err != nil {
+			log.Fatalf("Dial error: %s", err)
+		}
+
+		reconnectChannel := make(chan struct{})
+
+		go func() {
+			for {
+				_, message, err := c.ReadMessage()
+				if err != nil {
+					log.Printf("Read error: %s", err)
+					// TODO: Should only reconnect on some errors here
+					close(reconnectChannel)
+					return
+				}
+				log.Printf("received raw: %s", message)
+
+				type GenericMessage struct {
+					Op int     `json:"op"`
+					D  any     `json:"d"`
+					S  *int    `json:"s"`
+					T  *string `json:"t"`
+				}
+				var parsedResponse GenericMessage
+				json.Unmarshal(message, &parsedResponse)
+
+				log.Printf("Parsed response as: %v", parsedResponse)
+
+				switch parsedResponse.Op {
+				case 0: // Event dispatch (everything else)
+					type InteractionCreateMessage struct {
+						Opt int                            `json:"op"`
+						D   types.InteractionCreateDetails `json:"d"`
+						T   string                         `json:"t"`
+						S   int                            `json:"s"`
+					}
+
+					var parsedMessage InteractionCreateMessage
+					json.Unmarshal(message, &parsedMessage)
+
+					log.Printf("Parsed event dispatch message as %v", parsedMessage)
+
+					if parsedMessage.T == "READY" {
+						type ReadyMessageDetails struct {
+							SessionId string `json:"session_id"`
+						}
+
+						type ReadyMessage struct {
+							Op int                 `json:"op"`
+							D  ReadyMessageDetails `json:"d"`
+							T  string              `json:"t"`
+							S  string              `json:"s"`
+						}
+
+						var readyMessage ReadyMessage
+						json.Unmarshal(message, &readyMessage)
+
+						log.Printf("Parsed ready message as %v", readyMessage)
+						sessionId = &readyMessage.D.SessionId
+					} else if parsedMessage.T == "INTERACTION_CREATE" {
+						commands.RunInteractionCallback(parsedMessage.D)
+					}
+					setSequence(&parsedMessage.S)
+				case 1: // Heartbeat
+					type HeartbeatMessageRecv struct {
+						Op int `json:"op"`
+						D  any `json:"d"`
+					}
+					var parsedHeartbeatMessage HeartbeatMessageRecv
+					json.Unmarshal(message, &parsedHeartbeatMessage)
+
+					log.Printf("Parsed heartbeat message as %v", parsedHeartbeatMessage)
+					// Immediate response.
+					writeHeartbeat(c)
+				case 7: // Reconnect
+					close(reconnectChannel)
+					return
+				case 10: // Hello
+					type HelloMessage struct {
+						Op int `json:"op"`
+						D  struct {
+							HeartbeatInterval int `json:"heartbeat_interval"`
+						} `json:"d"`
+					}
+					var parsedHelloMessage HelloMessage
+					json.Unmarshal(message, &parsedHelloMessage)
+
+					log.Printf("Parsed hello response as: %v", parsedHelloMessage)
+
+					go heartbeatScheduler(c, parsedHelloMessage.D.HeartbeatInterval)
+					if reconnect {
+						resume(c)
+					} else {
+						identify(c)
+					}
+				case 11: // Heartbeat ack
+					type HeartbeatAckMessage struct {
+						Op int `json:"op"`
+					}
+					var parsedHeartbeatAckMessage HeartbeatAckMessage
+					json.Unmarshal(message, &parsedHeartbeatAckMessage)
+
+					log.Printf("Parsed heartbeat ack response as %v", parsedHeartbeatAckMessage)
+					// TODO: Track acks and reconnect if not receiving any
+				}
+
+			}
+		}()
+
 		select {
-		// TODO: Seems to work, but recursion here might not be good
-		// TODO: This still does not have the correct interrupt behavior
 		case <-reconnectChannel:
-			Connect(getGatewayUrl(true), true, interrupt)
-		case <-done:
-			return
+			c.Close()
+			reconnect = true
+			continue
 		case <-interrupt:
 			log.Println("interrupt")
-
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			if err != nil {
-				log.Printf("write close: %s", err)
+				log.Printf("write close error: %s", err)
 				return
 			}
-			select {
-			case <-done:
-			case <-time.After(time.Second):
-			}
+			<-time.After(time.Second)
 			return
 		}
 	}
