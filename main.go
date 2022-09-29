@@ -2,15 +2,31 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/haplesspanda/haplessbot/commands"
 	"github.com/haplesspanda/haplessbot/gateway"
 )
 
+func init() {
+	logfilename := fmt.Sprintf("log/log-%d.txt", time.Now().UnixMilli())
+	err := os.MkdirAll("log", os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+	logfile, err := os.Create(logfilename)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(logfile)
+}
+
 func main() {
-	log.Println("Starting up bot operations...")
+	fmt.Println("Starting up bot operations...")
 
 	defineCommands := flag.String("define_commands", "", "Comma-separated list of commands to push, if any")
 	flag.Parse()
@@ -25,5 +41,5 @@ func main() {
 
 	gateway.StartConnection()
 
-	log.Println("Done")
+	fmt.Println("Done")
 }

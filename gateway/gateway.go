@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -156,7 +157,7 @@ func connect(url string, interrupt chan os.Signal) {
 			reconnect = true
 			continue
 		case <-interrupt:
-			log.Println("interrupt")
+			fmt.Println("interrupt")
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))

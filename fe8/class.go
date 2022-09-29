@@ -101,8 +101,6 @@ func addPromotions(data [][]string) {
 		newPromotions := append(*class.Promotions, promotion)
 		class.Promotions = &newPromotions
 
-		log.Println(class.Promotions)
-
 		classes[normalizeName(entry[0])] = class
 	}
 }
