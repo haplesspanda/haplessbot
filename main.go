@@ -12,13 +12,15 @@ import (
 	"github.com/haplesspanda/haplessbot/gateway"
 )
 
+var logfile *os.File
+
 func init() {
 	logfilename := fmt.Sprintf("log/log-%d.txt", time.Now().UnixMilli())
 	err := os.MkdirAll("log", os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
-	logfile, err := os.Create(logfilename)
+	logfile, err = os.Create(logfilename)
 	if err != nil {
 		panic(err)
 	}
@@ -40,6 +42,12 @@ func main() {
 	}
 
 	gateway.StartConnection()
+
+	// Cleanup logic below.
+	err := logfile.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	fmt.Println("Done")
 }
