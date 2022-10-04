@@ -21,6 +21,7 @@ import (
 var heartbeatTimer *time.Timer
 var lastSequence *int
 var sequenceLock = sync.Mutex{}
+var writeLock = sync.Mutex{}
 var sessionId *string
 
 func init() {
@@ -160,7 +161,9 @@ func connect(url string, interrupt chan os.Signal) {
 			fmt.Println("interrupt")
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
+			writeLock.Lock()
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			writeLock.Unlock()
 			if err != nil {
 				log.Printf("write close error: %s", err)
 				return
@@ -278,7 +281,9 @@ func write(conn *websocket.Conn, jsonMessage any) {
 		panic(err)
 	}
 	log.Printf("Writing: %s", formatJson)
+	writeLock.Lock()
 	err = conn.WriteJSON(jsonMessage)
+	writeLock.Unlock()
 	if err != nil {
 		log.Printf("write err: %s", err)
 		return
